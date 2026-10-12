@@ -14,9 +14,12 @@ const cache = globalThis as typeof globalThis & { dbReady?: Promise<void> };
 // awaits this before its first query. A failed attempt is retried on the
 // next call.
 export function connectDB(): Promise<void> {
+
     if (configErrors.length > 0) {
         return Promise.reject(new Error(configErrors.join(' ')));
     }
+
+
 
     cache.dbReady ??= setUp().catch((err) => {
         cache.dbReady = undefined;
