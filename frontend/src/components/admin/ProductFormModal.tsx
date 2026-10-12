@@ -3,16 +3,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, ImagePlus, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/Button';
-import { AdminCategoryOption, AdminProduct } from '@/lib/adminApi';
+import { AdminCategoryOption, AdminProduct, adminApi, type ProductInput } from '@/lib/adminApi';
+import type { UploadedImage } from '@/data/adminTypes';
 import { SelectMenu } from './SelectMenu';
 
-const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+// Cloudinary's limit for images on the free plan. Files go straight to
+// Cloudinary, so Vercel's 4.5 MB request limit does not apply.
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 interface ProductFormModalProps {
     product: AdminProduct | null; // null = add new
     categories: AdminCategoryOption[];
-    onSubmit: (form: FormData) => Promise<void>;
+    onSubmit: (input: ProductInput) => Promise<void>;
     onClose: () => void;
 }
 
@@ -26,6 +29,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, cat
     const [subcategory, setSubcategory] = useState(product?.subcategory ?? '');
     const subcategories = categories.find((c) => c.id === category)?.subcategories ?? [];
     const [imageFile, setImageFile] = useState<File | null>(null);
+    // The upload of imageFile, kept so that retrying a failed save doesn't
+    // upload the same file again.
+    const uploadRef = useRef<{ file: File; image: UploadedImage } | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image.url ?? null);
     const [dragging, setDragging] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -54,7 +60,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, cat
             return;
         }
         if (file.size > MAX_IMAGE_BYTES) {
-            setError('Image must be 4 MB or smaller');
+            setError('Image must be 10 MB or smaller');
             return;
         }
         setError('');
@@ -70,15 +76,16 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, cat
         if (!category) return setError('Category is required');
         if (!isEdit && !imageFile) return setError('Product image is required');
 
-        const form = new FormData();
-        form.append('name', name.trim());
-        form.append('category', category);
-        form.append('subcategory', subcategory);
-        if (imageFile) form.append('image', imageFile);
-
         setSubmitting(true);
         try {
-            await onSubmit(form);
+            let image: UploadedImage | undefined;
+            if (imageFile) {
+                if (uploadRef.current?.file !== imageFile) {
+                    uploadRef.current = { file: imageFile, image: await adminApi.uploadProductImage(imageFile) };
+                }
+                image = uploadRef.current.image;
+            }
+            await onSubmit({ name: name.trim(), category, subcategory, image });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not save product');
             setSubmitting(false);
@@ -146,7 +153,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, cat
                                     <ImagePlus className="w-10 h-10 mb-2 text-primary-500" />
                                     <span className="font-medium text-neutral-700">Click to upload</span>
                                     <span className="text-sm">or drag and drop</span>
-                                    <span className="text-xs mt-2">JPG, PNG, WEBP or GIF, up to 4 MB</span>
+                                    <span className="text-xs mt-2">JPG, PNG, WEBP or GIF, up to 10 MB</span>
                                 </span>
                             )}
                         </button>

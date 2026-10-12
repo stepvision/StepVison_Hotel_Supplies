@@ -1,12 +1,18 @@
 import 'server-only';
-import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
 import { CLOUDINARY_FOLDERS } from '@/lib/cloudinary';
+import type { ImageUploadTicket, UploadedImage } from '@/data/adminTypes';
 import { env } from './env';
 import { HttpError } from './errors';
 
 // Product images are stored in Cloudinary under stepvision/hotel/products.
 // The product keeps the Cloudinary public id as `filename` (used to delete
 // it later) and a delivery URL as `url`.
+//
+// The browser uploads the file straight to Cloudinary with a signature made
+// here, and the product action only receives the result. Sending the file
+// through the server instead would hit Vercel's 4.5 MB body limit and
+// function time limit.
 
 cloudinary.config({
     cloud_name: env.cloudinary.cloudName,
@@ -20,38 +26,43 @@ export interface StoredImage {
     url: string;
 }
 
+// The signed parameters can't be changed by the browser, so uploads always
+// land in the products folder, under a random name, as an image.
+const ALLOWED_FORMATS = 'jpg,png,webp,gif';
+
 // f_auto/q_auto serve WebP/AVIF at a sensible quality to browsers that
 // support it, so the original is uploaded as-is.
-function deliveryUrl({ public_id, version }: Pick<UploadApiResponse, 'public_id' | 'version'>) {
-    return cloudinary.url(public_id, { version, fetch_format: 'auto', quality: 'auto' });
+function deliveryUrl(publicId: string, version: number) {
+    return cloudinary.url(publicId, { version, fetch_format: 'auto', quality: 'auto' });
 }
 
-// Uploads under a random name chosen by Cloudinary (never the client-supplied
-// one). Photos are turned upright using their EXIF data.
-export async function saveProductImage(file: File): Promise<StoredImage> {
-    const input = Buffer.from(await file.arrayBuffer());
+// Permission for one upload, valid for an hour (Cloudinary's limit).
+export function createProductImageUpload(): ImageUploadTicket {
+    const params = {
+        folder: CLOUDINARY_FOLDERS.products,
+        allowed_formats: ALLOWED_FORMATS,
+        timestamp: String(Math.round(Date.now() / 1000)),
+    };
+    return {
+        url: `https://api.cloudinary.com/v1_1/${env.cloudinary.cloudName}/image/upload`,
+        fields: {
+            ...params,
+            api_key: env.cloudinary.apiKey,
+            signature: cloudinary.utils.api_sign_request(params, env.cloudinary.apiSecret),
+        },
+    };
+}
 
-    let result: UploadApiResponse;
-    try {
-        result = await new Promise<UploadApiResponse>((resolve, reject) => {
-            cloudinary.uploader
-                .upload_stream({ folder: CLOUDINARY_FOLDERS.products, resource_type: 'image' }, (err, res) =>
-                    err || !res ? reject(err ?? new Error('Empty Cloudinary response')) : resolve(res)
-                )
-                .end(input);
+// Checks that an upload result really came from Cloudinary (its signature
+// covers the public id and version) and is one of our product images.
+export function verifyProductImage({ publicId, version, signature }: UploadedImage): StoredImage {
+    const expected = cloudinary.utils.api_sign_request({ public_id: publicId, version }, env.cloudinary.apiSecret);
+    if (signature !== expected || !publicId.startsWith(`${CLOUDINARY_FOLDERS.products}/`)) {
+        throw new HttpError(400, 'The image upload could not be verified. Please upload it again', {
+            image: 'The image upload could not be verified',
         });
-    } catch (err) {
-        const { http_code, message } = (err ?? {}) as { http_code?: number; message?: string };
-        if (http_code === 400) {
-            throw new HttpError(400, 'The image could not be read. Try a different file', {
-                image: 'The image could not be read',
-            });
-        }
-        console.error('Cloudinary upload failed:', message);
-        throw new HttpError(502, 'The image could not be uploaded. Please try again');
     }
-
-    return { filename: result.public_id, url: deliveryUrl(result) };
+    return { filename: publicId, url: deliveryUrl(publicId, version) };
 }
 
 // Removes an uploaded image in the background. A missing file is fine.

@@ -5,8 +5,6 @@ export const PRODUCT_LIMITS = {
     nameLength: 200,
     searchLength: 100,
     maxPageSize: 100,
-    imageMaxBytes: 4 * 1024 * 1024, // Vercel rejects request bodies over 4.5 MB
-    imageTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
 };
 
 export const PRODUCT_STATUSES = ['active', 'archived'] as const;

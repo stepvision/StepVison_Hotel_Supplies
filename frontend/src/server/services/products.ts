@@ -5,7 +5,7 @@ import { HttpError } from '../errors';
 import { Category } from '../models/Category';
 import { Product, type ProductFields } from '../models/Product';
 import type { CreateProductInput, ListProductsQuery, UpdateProductInput } from '../schemas/product';
-import { deleteProductImage, saveProductImage } from '../uploads';
+import { deleteProductImage, verifyProductImage } from '../uploads';
 import { paginationInfo, textSearchFilter } from '../utils/listing';
 
 type ProductRecord = ProductFields & { _id: unknown };
@@ -82,7 +82,7 @@ export async function createProduct({ image, ...fields }: CreateProductInput): P
     await connectDB();
     await checkCategoryExists(fields.category, fields.subcategory);
 
-    const storedImage = await saveProductImage(image);
+    const storedImage = verifyProductImage(image);
     try {
         const product = await Product.create({ ...fields, image: storedImage });
         return toAdminProduct(product);
@@ -98,7 +98,7 @@ export async function updateProduct(id: string, { image, ...fields }: UpdateProd
     await checkCategoryExists(fields.category, fields.subcategory);
 
     const oldImage = product.image?.filename;
-    const newImage = image ? await saveProductImage(image) : null;
+    const newImage = image ? verifyProductImage(image) : null;
 
     product.set({ ...fields, ...(newImage && { image: newImage }) });
     try {

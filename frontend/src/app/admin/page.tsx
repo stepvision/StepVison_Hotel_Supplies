@@ -5,6 +5,11 @@ import { getAdminSession } from '@/server/auth/session';
 // must never be prebuilt at build time.
 export const dynamic = 'force-dynamic';
 
+// Also applies to the admin server actions. A cold start connects to
+// MongoDB and runs the start-up checks in db.ts, which can pass Vercel's
+// 10 second default.
+export const maxDuration = 60;
+
 // The login is checked on the server, so the page opens straight onto the
 // dashboard (or the sign-in form) without a loading round trip.
 export default async function AdminPage() {

@@ -2,19 +2,20 @@ import { z } from 'zod';
 import { PRODUCT_LIMITS } from '../models/Product';
 import { categoryFilterQuery, categoryId, paginationQuery, requiredText, searchQuery } from './common';
 
-const { nameLength, imageMaxBytes, imageTypes, maxPageSize, searchLength } = PRODUCT_LIMITS;
+const { nameLength, maxPageSize, searchLength } = PRODUCT_LIMITS;
 
 // ---------- Field schemas ----------
 
-// Checked by shape rather than `instanceof File`, which can fail when the
-// upload was parsed by a different copy of the File class.
-const isFile = (value: unknown): value is File =>
-    typeof value === 'object' && value !== null && 'arrayBuffer' in value && 'size' in value && 'type' in value;
-
-const image = z
-    .custom<File>((value) => isFile(value) && value.size > 0, 'Product image is required')
-    .refine((file) => imageTypes.includes(file.type), 'Only JPG, PNG, WEBP or GIF images are allowed')
-    .refine((file) => file.size <= imageMaxBytes, 'Image must be 4 MB or smaller');
+// The result of the browser's upload to Cloudinary. The service checks its
+// signature before using it.
+const image = z.object(
+    {
+        publicId: z.string().min(1).max(300),
+        version: z.number().int().positive(),
+        signature: z.string().min(1).max(128),
+    },
+    { error: 'Product image is required' }
+);
 
 // An empty subcategory clears it. The service checks that both ids exist.
 const productFields = z.object({
@@ -32,7 +33,7 @@ const productFields = z.object({
 
 export const createProductSchema = productFields.extend({ image });
 
-// The form always sends every field; the image only when it is replaced.
+// The form always sends every field; the image only when it was replaced.
 export const updateProductSchema = productFields.extend({ image: image.optional() });
 
 export const listProductsQuerySchema = paginationQuery({ defaultLimit: 20, maxPageSize })

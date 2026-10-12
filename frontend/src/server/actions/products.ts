@@ -4,16 +4,22 @@ import { runAdminAction } from '../http';
 import { parseInput, productId } from '../schemas/common';
 import { createProductSchema, updateProductSchema } from '../schemas/product';
 import * as products from '../services/products';
+import { createProductImageUpload } from '../uploads';
 
-// FormData fields: name, category, subcategory, image (file).
+// Input fields: name, category, subcategory, image (the result of uploading
+// the file to Cloudinary with a ticket from createImageUploadAction).
 
-export async function createProductAction(form: FormData) {
-    return runAdminAction(() => products.createProduct(parseInput(createProductSchema, Object.fromEntries(form))));
+export async function createImageUploadAction() {
+    return runAdminAction(async () => createProductImageUpload());
 }
 
-export async function updateProductAction(id: string, form: FormData) {
+export async function createProductAction(input: unknown) {
+    return runAdminAction(() => products.createProduct(parseInput(createProductSchema, input)));
+}
+
+export async function updateProductAction(id: string, input: unknown) {
     return runAdminAction(() =>
-        products.updateProduct(parseInput(productId, id), parseInput(updateProductSchema, Object.fromEntries(form)))
+        products.updateProduct(parseInput(productId, id), parseInput(updateProductSchema, input))
     );
 }
 

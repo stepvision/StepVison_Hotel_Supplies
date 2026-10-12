@@ -24,6 +24,20 @@ export interface AdminProduct {
     updatedAt: string;
 }
 
+// Where and how the browser uploads a product image to Cloudinary: POST the
+// file as `file` to `url`, together with `fields`.
+export interface ImageUploadTicket {
+    url: string;
+    fields: Record<string, string>;
+}
+
+// The parts of Cloudinary's upload response the product actions need.
+export interface UploadedImage {
+    publicId: string;
+    version: number;
+    signature: string;
+}
+
 export interface Subcategory {
     id: string;
     name: string;
