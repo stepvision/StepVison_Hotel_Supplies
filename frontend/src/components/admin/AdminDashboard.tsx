@@ -9,6 +9,7 @@ import {
     Pencil,
     Trash2,
     LogOut,
+    KeyRound,
     Package,
     FolderTree,
     Tags,
@@ -22,6 +23,7 @@ import {
 import { Button } from '@/components/Button';
 import { ProductFormModal } from './ProductFormModal';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import { CategoryManager } from './CategoryManager';
 import { AdminPageHeading } from './AdminPageHeading';
 import { AdminTabs, AdminView } from './AdminTabs';
@@ -57,7 +59,11 @@ interface AdminDashboardProps {
     onLoggedOut: () => void;
 }
 
-type ModalState = { type: 'none' } | { type: 'form'; product: AdminProduct | null } | { type: 'delete'; product: AdminProduct };
+type ModalState =
+    | { type: 'none' }
+    | { type: 'form'; product: AdminProduct | null }
+    | { type: 'delete'; product: AdminProduct }
+    | { type: 'password' };
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLoggedOut }) => {
     const addToast = useToast((state) => state.addToast);
@@ -70,6 +76,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
     const [modal, setModal] = useState<ModalState>({ type: 'none' });
     const [deleting, setDeleting] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
     const [tab, setTab] = useState<AdminView>('products');
     const [categories, setCategories] = useState<AdminCategoryOption[]>([]);
 
@@ -195,6 +203,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
         }
     };
 
+    const openPasswordModal = () => {
+        setPasswordError('');
+        setModal({ type: 'password' });
+    };
+
+    const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+        setChangingPassword(true);
+        setPasswordError('');
+        try {
+            await adminApi.changePassword(currentPassword, newPassword);
+            addToast('Password changed', 'success');
+            closeModal();
+        } catch (err) {
+            if (err instanceof ApiError && err.status === 401) return handleApiError(err, '');
+            setPasswordError(err instanceof Error ? err.message : 'Could not change password');
+        } finally {
+            setChangingPassword(false);
+        }
+    };
+
     const handleLogout = async () => {
         setLoggingOut(true);
         try {
@@ -243,6 +271,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
                                 <ExternalLink className="w-4 h-4 sm:mr-1" />
                                 <span className="hidden sm:inline">View site</span>
                             </Link>
+                            <button
+                                onClick={openPasswordModal}
+                                className="inline-flex items-center text-sm text-neutral-300 hover:text-primary-400 p-1.5 sm:p-0"
+                                aria-label="Change password"
+                                title="Change password"
+                            >
+                                <KeyRound className="w-4 h-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Password</span>
+                            </button>
                             <button
                                 onClick={handleLogout}
                                 disabled={loggingOut}
@@ -517,6 +554,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
                     productName={modal.product.name}
                     deleting={deleting}
                     onConfirm={handleDelete}
+                    onCancel={closeModal}
+                />
+            )}
+            {modal.type === 'password' && (
+                <ChangePasswordModal
+                    saving={changingPassword}
+                    error={passwordError}
+                    onSave={handleChangePassword}
                     onCancel={closeModal}
                 />
             )}
