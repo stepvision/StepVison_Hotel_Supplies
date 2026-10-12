@@ -7,7 +7,8 @@ export const CLOUDINARY_FOLDERS = {
     site: `${CLOUDINARY_ROOT}/site`,
 };
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+// Trimmed because a value pasted into Vercel with quotes keeps them.
+const CLOUD_NAME = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? '').trim().replace(/^["']+|["']+$/g, '').trim();
 
 // URL of a fixed site image (hero, banners, category cards) uploaded by
 // scripts/migrate-images-to-cloudinary.mjs, e.g. siteImage('hero-slide-1').

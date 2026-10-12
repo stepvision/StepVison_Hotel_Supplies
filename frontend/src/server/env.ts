@@ -20,11 +20,9 @@ if (missing.length > 0) {
 }
 
 // Quotes are stripped from .env.local but kept by the Vercel dashboard, so a
-// value pasted with them works locally and fails on the live site.
-const badlyPasted = REQUIRED.filter((key) => /^\s|\s$|^["']|["']$/.test(process.env[key] ?? ''));
-if (badlyPasted.length > 0) {
-    configErrors.push(`Remove the quotes or spaces around: ${badlyPasted.join(', ')}`);
-}
+// value pasted with them would work locally and fail on the live site.
+// Cloudinary names and keys never contain quotes or spaces, so drop them.
+const cloudinaryValue = (key: string) => (process.env[key] ?? '').trim().replace(/^["']+|["']+$/g, '').trim();
 
 if (process.env.MONGODB_URI?.includes('<db_password>')) {
     configErrors.push('MONGODB_URI still contains <db_password>. Replace it with your MongoDB Atlas user password.');
@@ -41,8 +39,8 @@ export const env = {
     // How long a login (refresh token) lasts before the admin must sign in again.
     sessionTtlHours: Number(process.env.SESSION_TTL_HOURS) || 24,
     cloudinary: {
-        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? '',
-        apiKey: process.env.CLOUDINARY_API_KEY ?? '',
-        apiSecret: process.env.CLOUDINARY_API_SECRET ?? '',
+        cloudName: cloudinaryValue('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'),
+        apiKey: cloudinaryValue('CLOUDINARY_API_KEY'),
+        apiSecret: cloudinaryValue('CLOUDINARY_API_SECRET'),
     },
 };
