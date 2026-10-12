@@ -3,7 +3,9 @@ import type {
     AdminCategoryOption,
     AdminSessionInfo,
     CategoryListResponse,
+    ImageUploadTicket,
     ProductListResponse,
+    UploadedImage,
 } from '@/data/adminTypes';
 import { changePasswordAction, loginAction, logoutAction, refreshSessionAction } from '@/server/actions/auth';
 import {
@@ -14,7 +16,12 @@ import {
     updateCategoryAction,
     updateSubcategoryAction,
 } from '@/server/actions/categories';
-import { createProductAction, deleteProductAction, updateProductAction } from '@/server/actions/products';
+import {
+    createImageUploadAction,
+    createProductAction,
+    deleteProductAction,
+    updateProductAction,
+} from '@/server/actions/products';
 import { ApiError, callAction, getJson } from './http';
 
 export type {
@@ -64,7 +71,35 @@ async function withRefresh<T>(request: () => Promise<T>): Promise<T> {
     }
 }
 
-const adminGet = <T>(...args: Parameters<typeof getJson>) => withRefresh(() => getJson<T>(...args));
+export interface ProductInput {
+    name: string;
+    category: string;
+    subcategory: string;
+    image?: UploadedImage;
+}
+
+// Sends the file to Cloudinary with a signed ticket from the server.
+async function uploadImage(ticket: ImageUploadTicket, file: File): Promise<UploadedImage> {
+    const form = new FormData();
+    for (const [key, value] of Object.entries(ticket.fields)) form.append(key, value);
+    form.append('file', file);
+
+    let response: Response;
+    try {
+        response = await fetch(ticket.url, { method: 'POST', body: form });
+    } catch {
+        throw new ApiError(0, 'The image could not be uploaded. Please check your connection and try again.');
+    }
+
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body?.public_id) {
+        const reason = body?.error?.message;
+        throw new ApiError(response.status, reason ? `Image upload failed: ${reason}` : 'The image could not be uploaded');
+    }
+    return { publicId: body.public_id, version: body.version, signature: body.signature };
+}
+
+const adminGet =<T>(...args: Parameters<typeof getJson>) => withRefresh(() => getJson<T>(...args));
 
 const adminAction = <T>(action: () => Promise<ActionResult<T>>) => withRefresh(() => callAction(action()));
 
@@ -82,10 +117,14 @@ export const adminApi = {
     listProducts: (params: ProductListParams, signal?: AbortSignal) =>
         adminGet<ProductListResponse>('/api/admin/products', { ...params }, signal),
 
-    // FormData fields: name, category, subcategory, image (file)
-    createProduct: (form: FormData) => adminAction(() => createProductAction(form)),
+    // Uploads the file straight to Cloudinary; pass the result as `image`.
+    uploadProductImage: async (file: File) =>
+        uploadImage(await adminAction(() => createImageUploadAction()), file),
 
-    updateProduct: (id: string, form: FormData) => adminAction(() => updateProductAction(id, form)),
+    createProduct: (input: ProductInput & { image: UploadedImage }) => adminAction(() => createProductAction(input)),
+
+    // `image` only when it is replaced.
+    updateProduct: (id: string, input: ProductInput) => adminAction(() => updateProductAction(id, input)),
 
     deleteProduct: (id: string) => adminAction(() => deleteProductAction(id)),
 

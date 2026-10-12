@@ -34,6 +34,7 @@ import {
     AdminCategoryOption,
     AdminProduct,
     AdminSessionInfo,
+    ProductInput,
     ProductListResponse,
     RequestCancelledError,
 } from '@/lib/adminApi';
@@ -164,15 +165,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
 
     const closeModal = useCallback(() => setModal({ type: 'none' }), []);
 
-    const handleSave = async (form: FormData) => {
+    const handleSave = async ({ image, ...input }: ProductInput) => {
         if (modal.type !== 'form') return;
         try {
             const isNew = !modal.product;
             if (modal.product) {
-                await adminApi.updateProduct(modal.product._id, form);
+                await adminApi.updateProduct(modal.product._id, { ...input, image });
                 addToast('Product updated', 'success');
             } else {
-                await adminApi.createProduct(form);
+                if (!image) throw new Error('Product image is required');
+                await adminApi.createProduct({ ...input, image });
                 addToast('Product added', 'success');
             }
             closeModal();
