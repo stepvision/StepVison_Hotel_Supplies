@@ -8,6 +8,7 @@ import { useQuoteCart } from '@/store/useQuoteCart';
 
 // Map category names to icon filenames - REMOVED UNUSED FUNCTION
 
+
 export const Header: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isHospitalityDropdownOpen, setIsHospitalityDropdownOpen] = useState(false);
