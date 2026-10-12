@@ -19,6 +19,13 @@ if (missing.length > 0) {
     configErrors.push(`Missing required environment variables: ${missing.join(', ')}`);
 }
 
+// Quotes are stripped from .env.local but kept by the Vercel dashboard, so a
+// value pasted with them works locally and fails on the live site.
+const badlyPasted = REQUIRED.filter((key) => /^\s|\s$|^["']|["']$/.test(process.env[key] ?? ''));
+if (badlyPasted.length > 0) {
+    configErrors.push(`Remove the quotes or spaces around: ${badlyPasted.join(', ')}`);
+}
+
 if (process.env.MONGODB_URI?.includes('<db_password>')) {
     configErrors.push('MONGODB_URI still contains <db_password>. Replace it with your MongoDB Atlas user password.');
 }

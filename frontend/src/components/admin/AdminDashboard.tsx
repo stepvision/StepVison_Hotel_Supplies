@@ -26,7 +26,7 @@ import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { CategoryManager } from './CategoryManager';
 import { AdminPageHeading } from './AdminPageHeading';
-import { AdminTabs, AdminView } from './AdminTabs';
+import { AdminTabs, useAdminView } from './AdminTabs';
 import { useToast } from '@/store/useToast';
 import {
     adminApi,
@@ -79,7 +79,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
     const [loggingOut, setLoggingOut] = useState(false);
     const [changingPassword, setChangingPassword] = useState(false);
     const [passwordError, setPasswordError] = useState('');
-    const [tab, setTab] = useState<AdminView>('products');
+    const tab = useAdminView();
     const [categories, setCategories] = useState<AdminCategoryOption[]>([]);
 
     // A 401 from any call means the session (device) was removed or expired.
@@ -294,7 +294,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
                     </div>
                 </header>
 
-                <AdminTabs active={tab} onSelect={setTab} />
+                <AdminTabs />
             </div>
 
             <main className="flex-1 lg:min-h-0 lg:overflow-hidden">

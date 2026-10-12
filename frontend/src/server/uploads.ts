@@ -65,6 +65,18 @@ export function verifyProductImage({ publicId, version, signature }: UploadedIma
     return { filename: publicId, url: deliveryUrl(publicId, version) };
 }
 
+// Asks Cloudinary whether the API key and secret are accepted. Returns the
+// problem, or null. Used by /api/health.
+export async function checkCloudinary(): Promise<string | null> {
+    try {
+        await cloudinary.api.ping();
+        return null;
+    } catch (err) {
+        const { message, error } = (err ?? {}) as { message?: string; error?: { message?: string } };
+        return `Cloudinary: ${error?.message ?? message ?? 'not reachable'}`;
+    }
+}
+
 // Removes an uploaded image in the background. A missing file is fine.
 export function deleteProductImage(publicId?: string | null) {
     if (!publicId) return;
