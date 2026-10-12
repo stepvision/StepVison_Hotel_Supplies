@@ -5,7 +5,7 @@ import type {
     CategoryListResponse,
     ProductListResponse,
 } from '@/data/adminTypes';
-import { loginAction, logoutAction, refreshSessionAction } from '@/server/actions/auth';
+import { changePasswordAction, loginAction, logoutAction, refreshSessionAction } from '@/server/actions/auth';
 import {
     createCategoryAction,
     createSubcategoryAction,
@@ -75,6 +75,9 @@ export const adminApi = {
     login: (email: string, password: string) => callAction<AdminSessionInfo>(loginAction({ email, password })),
 
     logout: () => callAction(logoutAction()),
+
+    changePassword: (currentPassword: string, newPassword: string) =>
+        adminAction(() => changePasswordAction({ currentPassword, newPassword })),
 
     listProducts: (params: ProductListParams, signal?: AbortSignal) =>
         adminGet<ProductListResponse>('/api/admin/products', { ...params }, signal),
