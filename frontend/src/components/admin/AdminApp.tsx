@@ -1,25 +1,31 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { AdminLogin } from './AdminLogin';
 import { AdminDashboard } from './AdminDashboard';
 import type { AdminSessionInfo } from '@/data/adminTypes';
 
+// The sign-in form at /admin/login. A successful login opens the products page.
+export const AdminLoginPage: React.FC = () => {
+    const router = useRouter();
 
+    const handleLoggedIn = useCallback(() => {
+        router.replace('/admin/products');
+        router.refresh();
+    }, [router]);
 
-interface AdminAppProps {
-    initialSession: AdminSessionInfo | null; // null = not logged in
-}
+    return <AdminLogin onLoggedIn={handleLoggedIn} />;
+};
 
-// Switches between the sign-in form and the dashboard as the admin logs in and out.
-export const AdminApp: React.FC<AdminAppProps> = ({ initialSession }) => {
-    const [session, setSession] = useState(initialSession);
+// The dashboard. Logging out (or an expired session) goes back to /admin/login.
+export const AdminApp: React.FC<{ session: AdminSessionInfo }> = ({ session }) => {
+    const router = useRouter();
 
-    const handleLoggedOut = useCallback(() => setSession(null), []);
-
-    if (!session) {
-        return <AdminLogin onLoggedIn={setSession} />;
-    }
+    const handleLoggedOut = useCallback(() => {
+        router.replace('/admin/login');
+        router.refresh();
+    }, [router]);
 
     return <AdminDashboard session={session} onLoggedOut={handleLoggedOut} />;
 };
