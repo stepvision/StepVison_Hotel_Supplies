@@ -212,6 +212,18 @@ export async function getAdminSession(): Promise<AdminSessionInfo | null> {
     return admin ? toSessionInfo(admin, session) : null;
 }
 
+// getAdminSession for the admin pages. If the session cannot be read
+// (database down, a cookie left by an older deployment), the admin is sent
+// to the sign-in form instead of a 500 page. The real error is logged.
+export async function readAdminSession(): Promise<AdminSessionInfo | null> {
+    try {
+        return await getAdminSession();
+    } catch (err) {
+        console.error('Could not read the admin session:', err);
+        return null;
+    }
+}
+
 // Protects admin-only route handlers and server actions. Only a valid
 // access token is accepted here, never the refresh token.
 export async function requireAdmin(): Promise<AdminSessionInfo> {
