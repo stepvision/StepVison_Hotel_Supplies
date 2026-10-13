@@ -4,6 +4,8 @@ import React, { useCallback } from 'react';
 import { AdminLogin } from './AdminLogin';
 import { AdminDashboard } from './AdminDashboard';
 import type { AdminSessionInfo } from '@/data/adminTypes';
+console.log("sad");
+
 
 // Logging in or out changes the cookies the admin pages are rendered from,
 // so these load the next page in full. A client-side navigation followed by
