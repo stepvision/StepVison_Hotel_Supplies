@@ -34,8 +34,11 @@ async function setUp() {
     await mongoose.connect(env.mongoUri, { serverSelectionTimeoutMS: 7000 });
     console.log(`MongoDB connected: ${mongoose.connection.host}/${mongoose.connection.name}`);
     await ensureAdmin();
-    await upgradeSessions();
-    await removeProductPricing();
+    // One-off clean-ups of old data. They run in the background so a cold
+    // start (often a login) doesn't wait for them.
+    upgradeSessions()
+        .then(removeProductPricing)
+        .catch((err) => console.error('Database clean-up failed:', err));
 }
 
 // Creates the admin account from ADMIN_EMAIL / ADMIN_PASSWORD on first start.
