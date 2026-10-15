@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { ChevronDown, ChevronLeft, ChevronRight, Folder, FolderPlus, ListPlus, Loader2, AlertTriangle, Pencil, Tag, Trash2, Tags } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { AdminPageHeading } from './AdminPageHeading';
-import { CategoryFormModal, CategoryFormValues } from './CategoryFormModal';
-import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import type { CategoryFormValues } from './CategoryFormModal';
 import { useToast } from '@/store/useToast';
 import {
     adminApi,
@@ -16,6 +16,10 @@ import {
     CategoryListResponse,
     RequestCancelledError,
 } from '@/lib/adminApi';
+
+// Loaded when first opened.
+const CategoryFormModal = dynamic(() => import('./CategoryFormModal').then((m) => m.CategoryFormModal));
+const ConfirmDeleteModal = dynamic(() => import('./ConfirmDeleteModal').then((m) => m.ConfirmDeleteModal));
 
 interface CategoryManagerProps {
     allCategories: AdminCategoryOption[]; // every category, for the parent picker
