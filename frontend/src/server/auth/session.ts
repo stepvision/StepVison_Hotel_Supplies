@@ -38,11 +38,11 @@ type SessionRecord = SessionFields & { _id: Types.ObjectId };
 
 const sessionExpired = () => new HttpError(401, 'Session expired. Please log in again.');
 
-function toSessionInfo(admin: AdminAccount, session: { deviceId: string; expiresAt: Date }): AdminSessionInfo {
+function toSessionInfo(admin: AdminAccount, session: { deviceId: string; expiresAt?: Date | string }): AdminSessionInfo {
     return {
         admin: { id: String(admin._id), email: admin.email, name: admin.name ?? '' },
         deviceId: session.deviceId,
-        expiresAt: session.expiresAt.toISOString(),
+        expiresAt: session.expiresAt ? new Date(session.expiresAt).toISOString() : new Date().toISOString(),
     };
 }
 
@@ -86,6 +86,7 @@ export async function startSession(admin: AdminAccount): Promise<AdminSessionInf
         refreshTokenHash: hashToken(refreshToken),
         userAgent: headers().get('user-agent') ?? '',
         ip: clientIp(),
+        lastSeenAt: new Date(),
         expiresAt: new Date(Date.now() + sessionTtlMs()),
     });
 
@@ -183,7 +184,8 @@ async function getAccessSession(): Promise<AdminSessionInfo | null> {
     if (!admin) return null;
 
     // Only touch the database every few minutes, not on every request.
-    if (Date.now() - session.lastSeenAt.getTime() > LAST_SEEN_UPDATE_INTERVAL_MS) {
+    const lastSeenTime = session.lastSeenAt ? new Date(session.lastSeenAt).getTime() : 0;
+    if (Date.now() - lastSeenTime > LAST_SEEN_UPDATE_INTERVAL_MS) {
         await Session.updateOne({ _id: session._id }, { lastSeenAt: new Date() });
     }
 

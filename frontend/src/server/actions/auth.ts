@@ -11,7 +11,9 @@ import { changeAdminPassword, loginAdmin } from '../services/auth';
 // is validated here before it reaches a service.
 
 export async function loginAction(credentials: { email: string; password: string }) {
-    return runAction(() => loginAdmin(parseInput(loginSchema, credentials)));
+    const result = await runAction(() => loginAdmin(parseInput(loginSchema, credentials)));
+
+    return result;
 }
 
 export async function logoutAction() {

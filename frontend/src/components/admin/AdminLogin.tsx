@@ -26,8 +26,10 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoggedIn }) => {
         setSubmitting(true);
         try {
             const session = await adminApi.login(email, password);
+            console.log('Admin login response:', session);
             onLoggedIn(session);
         } catch (err) {
+            console.log('Admin login error response:', err);
             setError(err instanceof Error ? err.message : 'Login failed');
             setSubmitting(false);
         }
