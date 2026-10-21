@@ -64,9 +64,6 @@ function categoryLabel(categories: AdminCategoryOption[], categoryId?: string, s
     return subcategory ? `${category.name} › ${subcategory.name}` : category.name;
 }
 
-console.log("ss");
-
-
 const number = new Intl.NumberFormat('en-AE');
 const dateFormat = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
