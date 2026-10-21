@@ -17,26 +17,23 @@ const AdminDashboard = dynamic(() => import('./AdminDashboard').then((m) => m.Ad
 
 
 
-import { useRouter } from 'next/navigation';
+// Logging in or out changes the cookies every admin page is rendered from.
+// A full page load is used instead of router.replace(): in production the
+// client router cache can still hold a page rendered with the old cookies
+// (e.g. /admin/products redirecting to /admin/login), which sent the admin
+// back and forth between the two pages after logging out and in again.
+const openPage = (path: string) => window.location.replace(path);
 
 // The sign-in form at /admin/login. A successful login opens the products page.
 export const AdminLoginPage: React.FC = () => {
-    const router = useRouter();
-    const handleLoggedIn = useCallback(() => {
-        router.replace('/admin/products');
-        router.refresh();
-    }, [router]);
+    const handleLoggedIn = useCallback(() => openPage('/admin/products'), []);
 
     return <AdminLogin onLoggedIn={handleLoggedIn} />;
 };
 
 // The dashboard. Logging out (or an expired session) goes back to /admin/login.
 export const AdminApp: React.FC<{ session: AdminSessionInfo }> = ({ session }) => {
-    const router = useRouter();
-    const handleLoggedOut = useCallback(() => {
-        router.replace('/admin/login');
-        router.refresh();
-    }, [router]);
+    const handleLoggedOut = useCallback(() => openPage('/admin/login'), []);
 
     return <AdminDashboard session={session} onLoggedOut={handleLoggedOut} />;
 };
