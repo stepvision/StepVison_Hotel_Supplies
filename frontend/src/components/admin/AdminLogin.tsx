@@ -71,7 +71,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoggedIn }) => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className={inputClass}
-                                placeholder="admin@stepvisionhotelsupplies.com"
+                                placeholder="Enter your email"
                             />
                         </div>
                     </div>
