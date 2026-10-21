@@ -12,9 +12,7 @@ import { changeAdminPassword, loginAdmin } from '../services/auth';
 // is validated here before it reaches a service.
 
 export async function loginAction(credentials: { email: string; password: string }) {
-    const result = await runAction(() => loginAdmin(parseInput(loginSchema, credentials)));
-
-    return result;
+    return runAction(() => loginAdmin(parseInput(loginSchema, credentials)));
 }
 
 export async function logoutAction() {
