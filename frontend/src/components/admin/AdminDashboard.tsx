@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -21,10 +22,6 @@ import {
     X,
 } from 'lucide-react';
 import { Button } from '@/components/Button';
-import { ProductFormModal } from './ProductFormModal';
-import { ConfirmDeleteModal } from './ConfirmDeleteModal';
-import { ChangePasswordModal } from './ChangePasswordModal';
-import { CategoryManager } from './CategoryManager';
 import { AdminPageHeading } from './AdminPageHeading';
 import { AdminTabs, useAdminView } from './AdminTabs';
 import { useToast } from '@/store/useToast';
@@ -38,6 +35,22 @@ import {
     ProductListResponse,
     RequestCancelledError,
 } from '@/lib/adminApi';
+import { thumbnailUrl } from '@/lib/cloudinary';
+
+// The modals and the Categories page load on demand, so the products list
+// shows (and responds) without waiting for code it may never use.
+const loadProductForm = () => import('./ProductFormModal');
+const loadCategoryManager = () => import('./CategoryManager');
+const ProductFormModal = dynamic(() => loadProductForm().then((m) => m.ProductFormModal));
+const ConfirmDeleteModal = dynamic(() => import('./ConfirmDeleteModal').then((m) => m.ConfirmDeleteModal));
+const ChangePasswordModal = dynamic(() => import('./ChangePasswordModal').then((m) => m.ChangePasswordModal));
+const CategoryManager = dynamic(() => loadCategoryManager().then((m) => m.CategoryManager), {
+    loading: () => (
+        <div className="p-16 flex justify-center">
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" aria-label="Loading categories" />
+        </div>
+    ),
+});
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
@@ -127,6 +140,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
     useEffect(() => {
         loadProducts();
     }, [loadProducts]);
+
+    // Fetch the product form and Categories code once the browser is idle,
+    // so they open instantly later without slowing the first load.
+    useEffect(() => {
+        const preload = () => {
+            loadProductForm();
+            loadCategoryManager();
+        };
+        if ('requestIdleCallback' in window) {
+            const id = window.requestIdleCallback(preload, { timeout: 3000 });
+            return () => window.cancelIdleCallback(id);
+        }
+        const timer = setTimeout(preload, 1500);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Cancel any request still running when the dashboard closes.
     useEffect(() => () => productsRequest.current?.abort(), []);
@@ -426,7 +454,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
                                         {products.map((product) => (
                                             <li key={product._id} className="p-4 flex gap-3">
                                                 <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200">
-                                                    <Image src={product.image.url} alt={product.name} fill sizes="64px" className="object-cover" />
+                                                    <Image src={thumbnailUrl(product.image.url, 64)} alt={product.name} fill sizes="64px" loading="lazy" className="object-cover" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-start justify-between gap-2">
@@ -473,7 +501,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogge
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center gap-3 min-w-[220px]">
                                                             <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200">
-                                                                <Image src={product.image.url} alt={product.name} fill sizes="56px" className="object-cover" />
+                                                                <Image src={thumbnailUrl(product.image.url, 56)} alt={product.name} fill sizes="56px" loading="lazy" className="object-cover" />
                                                             </div>
                                                             <div className="min-w-0">
                                                                 <span className="font-semibold text-neutral-900 line-clamp-2">{product.name}</span>

@@ -16,3 +16,12 @@ const CLOUD_NAME = (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? '').trim().
 export function siteImage(name: string) {
     return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto/${CLOUDINARY_FOLDERS.site}/${name}`;
 }
+
+// A small square version of an uploaded Cloudinary image, for list
+// thumbnails: `size` CSS pixels, doubled for high-density screens. Other URLs
+// (e.g. local /uploads files) are returned unchanged.
+export function thumbnailUrl(url: string, size: number) {
+    if (!url.includes('res.cloudinary.com/') || !url.includes('/image/upload/')) return url;
+    const px = size * 2;
+    return url.replace('/image/upload/', `/image/upload/c_fill,w_${px},h_${px},f_auto,q_auto/`);
+}
