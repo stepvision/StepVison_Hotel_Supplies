@@ -12,35 +12,49 @@ const REQUIRED = [
 
 // Problems with the environment. They are reported by /api/health and
 // thrown on the first database call, instead of crashing the whole site.
-export const configErrors: string[] = [];
-
-const missing = REQUIRED.filter((key) => !process.env[key]);
-if (missing.length > 0) {
-    configErrors.push(`Missing required environment variables: ${missing.join(', ')}`);
+export function getConfigErrors(): string[] {
+    const errors: string[] = [];
+    const missing = REQUIRED.filter((key) => !process.env[key]);
+    if (missing.length > 0) {
+        errors.push(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+    if (process.env.MONGODB_URI?.includes('<db_password>')) {
+        errors.push('MONGODB_URI still contains <db_password>. Replace it with your MongoDB Atlas user password.');
+    }
+    return errors;
 }
+
+// Kept as an array-like proxy so imports of configErrors remain backward-compatible
+export const configErrors: string[] = new Proxy([] as string[], {
+    get(target, prop, receiver) {
+        const fresh = getConfigErrors();
+        if (prop === 'length') return fresh.length;
+        if (typeof prop === 'string' && !isNaN(Number(prop))) return fresh[Number(prop)];
+        const val = Reflect.get(fresh, prop, receiver);
+        return typeof val === 'function' ? val.bind(fresh) : val;
+    },
+});
 
 // Quotes are stripped from .env.local but kept by the Vercel dashboard, so a
 // value pasted with them would work locally and fail on the live site.
 // Cloudinary names and keys never contain quotes or spaces, so drop them.
 const cloudinaryValue = (key: string) => (process.env[key] ?? '').trim().replace(/^["']+|["']+$/g, '').trim();
 
-if (process.env.MONGODB_URI?.includes('<db_password>')) {
-    configErrors.push('MONGODB_URI still contains <db_password>. Replace it with your MongoDB Atlas user password.');
-}
-
 export const env = {
-    mongoUri: process.env.MONGODB_URI ?? '',
-    isProduction: process.env.NODE_ENV === 'production',
-    adminEmail: (process.env.ADMIN_EMAIL ?? '').toLowerCase().trim(),
-    adminPassword: process.env.ADMIN_PASSWORD ?? '',
-    jwtSecret: process.env.JWT_SECRET ?? '',
+    get mongoUri() { return process.env.MONGODB_URI ?? ''; },
+    get isProduction() { return process.env.NODE_ENV === 'production'; },
+    get adminEmail() { return (process.env.ADMIN_EMAIL ?? '').toLowerCase().trim(); },
+    get adminPassword() { return process.env.ADMIN_PASSWORD ?? ''; },
+    get jwtSecret() { return process.env.JWT_SECRET ?? ''; },
     // How long an access token lasts before the browser must refresh it.
-    accessTokenTtlMinutes: Number(process.env.ACCESS_TOKEN_TTL_MINUTES) || 15,
+    get accessTokenTtlMinutes() { return Number(process.env.ACCESS_TOKEN_TTL_MINUTES) || 15; },
     // How long a login (refresh token) lasts before the admin must sign in again.
-    sessionTtlHours: Number(process.env.SESSION_TTL_HOURS) || 24,
-    cloudinary: {
-        cloudName: cloudinaryValue('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'),
-        apiKey: cloudinaryValue('CLOUDINARY_API_KEY'),
-        apiSecret: cloudinaryValue('CLOUDINARY_API_SECRET'),
+    get sessionTtlHours() { return Number(process.env.SESSION_TTL_HOURS) || 24; },
+    get cloudinary() {
+        return {
+            cloudName: cloudinaryValue('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME'),
+            apiKey: cloudinaryValue('CLOUDINARY_API_KEY'),
+            apiSecret: cloudinaryValue('CLOUDINARY_API_SECRET'),
+        };
     },
 };

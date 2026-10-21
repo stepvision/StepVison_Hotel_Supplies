@@ -8,23 +8,33 @@ import { Session } from './models/Session';
 
 // Kept on globalThis so hot reloads in development and warm serverless
 // starts reuse one connection instead of opening a new one each time.
-const cache = globalThis as typeof globalThis & { dbReady?: Promise<void> };
+const cache = globalThis as typeof globalThis & { dbReady?: Promise<void>; connectedUri?: string };
 
 // Connects to MongoDB and creates the admin account, once. Every service
 // awaits this before its first query. A failed attempt is retried on the
 // next call.
 export function connectDB(): Promise<void> {
-
     if (configErrors.length > 0) {
         return Promise.reject(new Error(configErrors.join(' ')));
     }
 
-
-
-    cache.dbReady ??= setUp().catch((err) => {
+    if (cache.connectedUri && cache.connectedUri !== env.mongoUri) {
         cache.dbReady = undefined;
-        throw err;
-    });
+        cache.connectedUri = undefined;
+        if (mongoose.connection.readyState !== 0) {
+            mongoose.disconnect();
+        }
+    }
+
+    cache.dbReady ??= setUp()
+        .then(() => {
+            cache.connectedUri = env.mongoUri;
+        })
+        .catch((err) => {
+            cache.dbReady = undefined;
+            cache.connectedUri = undefined;
+            throw err;
+        });
     return cache.dbReady;
 }
 
