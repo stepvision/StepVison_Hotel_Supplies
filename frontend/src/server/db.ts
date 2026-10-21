@@ -26,6 +26,15 @@ export function connectDB(): Promise<void> {
         }
     }
 
+    // A warm serverless instance can keep the cached promise after its
+    // connection has gone (frozen between requests, or a second copy of
+    // mongoose in the bundle). Queries would then wait the full 10 second
+    // buffer timeout and fail, so connect again instead.
+    if (cache.connectedUri && !isConnectedOrConnecting()) {
+        cache.dbReady = undefined;
+        cache.connectedUri = undefined;
+    }
+
     cache.dbReady ??= setUp()
         .then(() => {
             cache.connectedUri = env.mongoUri;
@@ -37,6 +46,10 @@ export function connectDB(): Promise<void> {
         });
     return cache.dbReady;
 }
+
+const isConnectedOrConnecting = () =>
+    mongoose.connection.readyState === mongoose.ConnectionStates.connected ||
+    mongoose.connection.readyState === mongoose.ConnectionStates.connecting;
 
 async function setUp() {
     // Give up well before a serverless request would time out (Vercel: 10s),
