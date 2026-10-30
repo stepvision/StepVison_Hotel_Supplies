@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Button } from './Button';
 import { Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { callAction } from '@/lib/http';
+import { sendEnquiryAction } from '@/server/actions/contact';
 
 export const ContactForm = () => {
     const [formData, setFormData] = useState({
@@ -14,6 +16,7 @@ export const ContactForm = () => {
     });
 
     const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -27,11 +30,14 @@ export const ContactForm = () => {
         e.preventDefault();
         setStatus('submitting');
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            await callAction(sendEnquiryAction(formData));
+        } catch (err) {
+            setErrorMessage(err instanceof Error ? err.message : '');
+            setStatus('error');
+            return;
+        }
 
-        // Setup for email integration later
-        console.log('Form submitted:', formData);
         setStatus('success');
         setFormData({
             name: '',
@@ -189,7 +195,7 @@ export const ContactForm = () => {
                     <AlertCircle className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
                     <div>
                         <h4 className="font-semibold">Something went wrong</h4>
-                        <p className="text-sm mt-1">Please try again later or contact us directly via email.</p>
+                        <p className="text-sm mt-1">{errorMessage || 'Please try again later or contact us directly via email.'}</p>
                     </div>
                 </div>
             )}
