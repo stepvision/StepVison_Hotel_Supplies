@@ -57,4 +57,13 @@ export const env = {
             apiSecret: cloudinaryValue('CLOUDINARY_API_SECRET'),
         };
     },
+    // Contact form email. Not in REQUIRED: without them only the form fails.
+    // CONTACT_EMAIL may list several addresses separated by commas.
+    get contact() {
+        return {
+            apiKey: (process.env.RESEND_API_KEY ?? '').trim(),
+            to: (process.env.CONTACT_EMAIL ?? '').trim(),
+            from: (process.env.CONTACT_FROM_EMAIL ?? '').trim(),
+        };
+    },
 };
