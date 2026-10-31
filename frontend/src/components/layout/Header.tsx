@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Menu, X, ShoppingCart, FileText, ChevronDown } from 'lucide-react';
 import { Button } from '../Button';
 import { useQuoteCart } from '@/store/useQuoteCart';
+import { useCategories } from '@/lib/useCatalog';
 
 // Map category names to icon filenames - REMOVED UNUSED FUNCTION
 
@@ -15,6 +16,7 @@ export const Header: React.FC = () => {
     const [isMobileHospitalityOpen, setIsMobileHospitalityOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const totalItems = useQuoteCart((state) => state.getTotalItems());
+    const { categories } = useCategories();
 
 
 
@@ -31,17 +33,11 @@ export const Header: React.FC = () => {
         { label: 'Contact', href: '/contact' },
     ];
 
-    const productDropdownItems = [
-        { label: 'Engineering Equipments', href: '/products/engineering-solutions' },
-        { label: 'Housekeeping Equipments', href: '/products/housekeeping-cleaning' },
-        { label: 'Banqueting', href: '/products/kitchen-catering' },
-        { label: 'F & B Solutions & Equipment', href: '/products/tabletop-dining' },
-        { label: 'Hotel Supply', href: '/hospitality-supplies' },
-        { label: 'Room Supply', href: '/products/guest-room-essentials' },
-        { label: 'Kids Area Supply', href: '/products/custom-project-solutions' },
-        { label: 'Medical Supply Equipments', href: '/products/custom-project-solutions' },
-        { label: 'Swimming Pool & Sauna Accessories', href: '/products/custom-project-solutions' },
-    ];
+    // The product categories from the admin panel, so the menu always matches them.
+    const productDropdownItems = categories.map((category) => ({
+        label: category.name,
+        href: `/products/${category.slug}`,
+    }));
 
     return (
         <header className="bg-black border-b border-neutral-800 sticky top-0 z-50 shadow-sm">
@@ -75,7 +71,7 @@ export const Header: React.FC = () => {
                                     {item.hasDropdown && <ChevronDown className="w-4 h-4 ml-1" />}
                                 </Link>
 
-                                {item.hasDropdown && isHospitalityDropdownOpen && (
+                                {item.hasDropdown && isHospitalityDropdownOpen && productDropdownItems.length > 0 && (
                                     <div className="absolute left-0 top-full pt-2 w-72 z-50">
                                         <div className="bg-[#f0f0f0] border border-neutral-200 shadow-xl py-1">
                                             {productDropdownItems.map((subItem) => (
@@ -147,7 +143,7 @@ export const Header: React.FC = () => {
                                                     className={`w-4 h-4 transition-transform ${isMobileHospitalityOpen ? 'rotate-180' : ''}`}
                                                 />
                                             </button>
-                                            {isMobileHospitalityOpen && (
+                                            {isMobileHospitalityOpen && productDropdownItems.length > 0 && (
                                                 <div className="bg-neutral-50 py-2 space-y-1">
                                                     {productDropdownItems.map((subItem) => (
                                                         <Link
