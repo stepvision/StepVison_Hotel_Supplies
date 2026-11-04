@@ -51,8 +51,8 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="font-semibold text-neutral-900 mb-1">Email Address</h3>
                                         <p className="text-neutral-600 text-sm mb-2">Send us your inquiries anytime</p>
-                                        <a href="mailto:sales@stepvisionhotelsupplies.com" className="text-lg font-bold text-primary-600 hover:text-primary-700 transition-colors break-all">
-                                            sales@stepvisionhotelsupplies.com
+                                        <a href="mailto:stepvisionhotelsupplies@gmail.com" className="text-lg font-bold text-primary-600 hover:text-primary-700 transition-colors break-all">
+                                            stepvisionhotelsupplies@gmail.com
                                         </a>
                                     </div>
                                 </div>
