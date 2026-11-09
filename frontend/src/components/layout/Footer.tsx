@@ -49,10 +49,10 @@ export const Footer: React.FC = () => {
                             <div className="flex items-center space-x-2">
                                 <Mail className="w-4 h-4 flex-shrink-0" />
                                 <a
-                                    href="mailto:stepvisionhotelsupplies@gmail.com"
+                                    href="mailto:sales@stepvisioninternational.com"
                                     className="text-sm hover:text-primary-400 transition-colors"
                                 >
-                                    stepvisionhotelsupplies@gmail.com
+                                    sales@stepvisioninternational.com
                                 </a>
                             </div>
                         </div>

@@ -46,7 +46,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ title, lastUpdated, intro,
 );
 
 export const SalesEmail = () => (
-    <a href="mailto:stepvisionhotelsupplies@gmail.com" className="text-primary-600 hover:underline">
-        stepvisionhotelsupplies@gmail.com
+    <a href="mailto:sales@stepvisioninternational.com" className="text-primary-600 hover:underline">
+        sales@stepvisioninternational.com
     </a>
 );
